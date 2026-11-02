@@ -267,3 +267,11 @@ article.post:nth-of-type(even) .coment strong { color:var(--branco); }
 .form-coment input { flex:1; min-width:0; padding:8px 0; background:transparent; color:var(--branco); border:none; border-bottom:1px solid rgba(255,255,255,.28); font:400 15px 'Urbanist', sans-serif; }
 .form-coment input:focus-visible { outline:none; border-bottom-color:var(--vermelho); box-shadow:0 1px 0 var(--vermelho); }
 .form-coment .curtir { margin:0; }
+
+/* ---------- gravador de música ---------- */
+.gravador { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:-6px 0 18px; }
+.gravador button { padding:7px 14px; background:none; color:var(--branco); border:1px solid var(--vermelho); border-radius:10px; font:700 12px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.1em; text-transform:uppercase; }
+.gravador button.gravando { background:var(--vermelho); box-shadow:0 0 18px rgba(240,20,47,.7); }
+.gravador button:disabled { opacity:.6; cursor:wait; }
+#tempo { font-size:14px; color:rgba(255,255,255,.75); }
+#previa { width:100%; height:38px; }

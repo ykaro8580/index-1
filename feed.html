@@ -26,6 +26,11 @@
         <h2>Novo post</h2>
         <label class="campo"><span>Foto</span><input id="imagem" type="file" accept="image/*"></label>
         <label class="campo"><span>Música autoral</span><input id="audio" type="file" accept="audio/*"></label>
+        <div class="gravador">
+            <button type="button" id="gravar">Gravar agora</button>
+            <span id="tempo"></span>
+            <audio id="previa" controls hidden></audio>
+        </div>
         <label class="campo"><span>Título da música</span><input id="titulo-post" maxlength="60"></label>
         <label class="campo"><span>Legenda</span><textarea id="legenda-post" rows="2" maxlength="200"></textarea></label>
         <div class="acoes">
@@ -37,6 +42,7 @@
 </dialog>
 
 <script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const perfil = new URLSearchParams(location.search).get("u");
@@ -309,13 +315,111 @@ const reduzirFoto = (file) => new Promise((ok, erro) => {
     img.src = URL.createObjectURL(file);
 });
 
-const MIME_POR_EXTENSAO = { mp3:"audio/mpeg", m4a:"audio/mp4", mp4:"audio/mp4", aac:"audio/aac", wav:"audio/wav", ogg:"audio/ogg", oga:"audio/ogg" };
+/* ---------- gravar música direto no site ---------- */
+const PODE_GRAVAR = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const MAX_GRAVACAO = 240; // segundos; em mp3 de 128 kbps dá cerca de 4 MB
+let gravador = null, fluxo = null, pedacos = [], gravacao = null, cronometro = null, inicio = 0;
+const rotuloTempo = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+
+function limparGravacao() {
+    clearInterval(cronometro);
+    if (gravador && gravador.state !== "inactive") { gravador.onstop = null; gravador.stop(); }
+    if (fluxo) fluxo.getTracks().forEach((t) => t.stop());
+    gravador = fluxo = gravacao = null;
+    pedacos = [];
+    $("previa").hidden = true;
+    $("previa").removeAttribute("src");
+    $("tempo").textContent = "";
+    $("gravar").textContent = "Gravar agora";
+    $("gravar").classList.remove("gravando");
+    $("gravar").disabled = false;
+}
+
+// o Android grava em webm e o iPhone pode não tocar; em mp3 toca em qualquer aparelho
+async function paraMp3(blob) {
+    if (!window.lamejs) return null;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+    ctx.close();
+    const canal = buf.getChannelData(0);
+    const pcm = new Int16Array(canal.length);
+    for (let i = 0; i < canal.length; i++) {
+        const v = Math.max(-1, Math.min(1, canal[i]));
+        pcm[i] = v < 0 ? v * 32768 : v * 32767;
+    }
+    const enc = new lamejs.Mp3Encoder(1, buf.sampleRate, 128);
+    const partes = [];
+    for (let i = 0; i < pcm.length; i += 1152) {
+        const o = enc.encodeBuffer(pcm.subarray(i, i + 1152));
+        if (o.length) partes.push(o);
+    }
+    const fim = enc.flush();
+    if (fim.length) partes.push(fim);
+    return new Blob(partes, { type: "audio/mpeg" });
+}
+
+async function terminarGravacao() {
+    clearInterval(cronometro);
+    fluxo.getTracks().forEach((t) => t.stop());
+    const segundos = Math.min(MAX_GRAVACAO, Math.round((Date.now() - inicio) / 1000));
+    const bruto = new Blob(pedacos, { type: gravador.mimeType });
+    $("gravar").classList.remove("gravando");
+    $("gravar").disabled = true;
+    $("postar").disabled = true;
+    $("msg").textContent = "Preparando a gravação…";
+    try {
+        const mp3 = await paraMp3(bruto).catch(() => null);
+        gravacao = mp3
+            ? new File([mp3], "gravacao.mp3", { type: "audio/mpeg" })
+            : new File([bruto], "gravacao." + (/mp4/.test(bruto.type) ? "m4a" : "webm"), { type: bruto.type });
+        $("audio").value = "";
+        $("previa").src = URL.createObjectURL(gravacao);
+        $("previa").hidden = false;
+        $("tempo").textContent = rotuloTempo(segundos);
+        $("gravar").textContent = "Regravar";
+        $("msg").textContent = "";
+    } finally {
+        $("gravar").disabled = false;
+        $("postar").disabled = false;
+    }
+}
+
+async function alternarGravacao() {
+    if (gravador && gravador.state === "recording") { gravador.stop(); return; }
+    limparGravacao();
+    $("msg").textContent = "";
+    try {
+        fluxo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    } catch (err) {
+        $("msg").textContent = "Não consegui usar o microfone. Libere a permissão no navegador e tente de novo.";
+        return;
+    }
+    gravador = new MediaRecorder(fluxo);
+    gravador.ondataavailable = (e) => { if (e.data.size) pedacos.push(e.data); };
+    gravador.onstop = terminarGravacao;
+    gravador.start();
+    inicio = Date.now();
+    $("gravar").textContent = "Parar";
+    $("gravar").classList.add("gravando");
+    cronometro = setInterval(() => {
+        const s = (Date.now() - inicio) / 1000;
+        $("tempo").textContent = rotuloTempo(s) + " / " + rotuloTempo(MAX_GRAVACAO);
+        if (s >= MAX_GRAVACAO) gravador.stop();
+    }, 250);
+}
+
+if (PODE_GRAVAR) $("gravar").addEventListener("click", alternarGravacao);
+else document.querySelector(".gravador").hidden = true;
+$("audio").addEventListener("change", () => { if ($("audio").files[0]) limparGravacao(); });
+dialogo.addEventListener("close", limparGravacao);
+
+const MIME_POR_EXTENSAO = { mp3:"audio/mpeg", m4a:"audio/mp4", mp4:"audio/mp4", aac:"audio/aac", wav:"audio/wav", ogg:"audio/ogg", oga:"audio/ogg", webm:"audio/webm" };
 // o iPhone costuma mandar o tipo da música vazio ou diferente do padrão, então vale a extensão primeiro
 const mimeDoAudio = (file) => MIME_POR_EXTENSAO[file.name.split(".").pop().toLowerCase()] || file.type;
 
 $("form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const foto = $("imagem").files[0], musica = $("audio").files[0];
+    const foto = $("imagem").files[0], musica = gravacao || $("audio").files[0];
     const msg = $("msg");
     if (!foto && !musica) { msg.textContent = "Escolha uma foto, uma música ou as duas."; return; }
     if (musica && musica.size > 8 * 1024 * 1024) { msg.textContent = "A música passa de 8 MB. Comprima o arquivo."; return; }
