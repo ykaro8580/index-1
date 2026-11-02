@@ -8,154 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,500;125,700&family=Instrument+Serif&family=Urbanist:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-:root { --preto:#000; --noite:#060102; --vermelho:#f0142f; --carmim:#c10a1f; --vinho:#4a0309; --branco:#fff; }
-* { margin:0; padding:0; box-sizing:border-box; }
-[hidden] { display:none !important; }
-::selection { background:var(--vermelho); color:#fff; }
-body {
-    min-height:100dvh; color:var(--branco); font:300 16px 'Urbanist', sans-serif;
-    background:
-        radial-gradient(90% 38% at 50% 108%, rgba(240,20,47,.85), transparent 72%),
-        linear-gradient(180deg, #000 0%, #000 55%, #250207 85%, #5c050d 100%);
-    background-attachment:fixed;
-}
-/* barras verticais borradas, bem discretas atrás do conteúdo */
-body::before {
-    content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.3; filter:blur(.6px);
-    background:repeating-linear-gradient(90deg,
-        transparent 0 4px, rgba(255,24,48,.9) 4px 5px, transparent 5px 8px,
-        rgba(255,24,48,.45) 8px 9px, transparent 9px 14px, rgba(255,24,48,.7) 14px 15px, transparent 15px 19px);
-    -webkit-mask-image:
-        radial-gradient(ellipse 60% 18% at 10% 10%, #000, transparent 100%),
-        radial-gradient(ellipse 55% 14% at 95% 45%, #000, transparent 100%);
-    mask-image:
-        radial-gradient(ellipse 60% 18% at 10% 10%, #000, transparent 100%),
-        radial-gradient(ellipse 55% 14% at 95% 45%, #000, transparent 100%);
-}
-button { font:inherit; cursor:pointer; color:inherit; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid #fff; outline-offset:3px; }
-
-.barra {
-    position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px;
-    padding:14px 20px; padding-top:calc(14px + env(safe-area-inset-top, 0px));
-    background:rgba(0,0,0,.72); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); border-bottom:1px solid rgba(240,20,47,.4);
-}
-.marca {
-    font:400 32px/1 'Instrument Serif', serif; text-transform:uppercase; color:var(--vermelho); text-decoration:none;
-    text-shadow:0 0 12px rgba(240,20,47,.85), 0 0 34px rgba(240,20,47,.5);
-}
-.linha { flex:1; height:1px; background:linear-gradient(90deg, var(--vermelho), rgba(240,20,47,.2)); }
-.barra button, .voltar {
-    background:none; border:none; color:var(--branco);
-    font:700 10px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.12em; text-transform:uppercase;
-}
-.barra #sair { text-decoration:underline; text-underline-offset:4px; }
-.barra .novo {
-    padding:9px 14px; background:linear-gradient(180deg, #ff2a3f, var(--carmim)); border-radius:10px; text-decoration:none;
-    box-shadow:0 0 20px rgba(240,20,47,.5);
-}
-
-main { width:min(520px, 100%); margin:0 auto; padding:24px 16px 60px; display:flex; flex-direction:column; gap:26px; counter-reset:p; }
-.voltar { align-self:flex-start; color:var(--vermelho); text-decoration:none; }
-.perfil {
-    font:400 clamp(40px, 11vw, 54px)/.95 'Instrument Serif', serif; text-transform:uppercase; color:var(--vermelho);
-    text-shadow:0 0 14px rgba(240,20,47,.85), 0 0 46px rgba(240,20,47,.5); overflow-wrap:anywhere;
-}
-.vazio { text-align:center; line-height:1.6; font-weight:400; }
-
-/* cartões: vidro escuro, alternando com cartões de degradê vermelho */
-.post {
-    position:relative; isolation:isolate; counter-increment:p; padding:18px;
-    background:linear-gradient(160deg, rgba(36,36,36,.92), rgba(0,0,0,.92));
-    border:1px solid rgba(240,20,47,.45); border-radius:16px;
-    box-shadow:0 12px 40px rgba(0,0,0,.5);
-}
-article.post:nth-of-type(even) {
-    background:radial-gradient(120% 100% at 15% 8%, #e0101f 0%, #8f0a16 38%, #1a0205 88%);
-    border-color:rgba(255,90,100,.6);
-}
-.topo { display:flex; justify-content:space-between; gap:12px; margin-bottom:14px; font:700 10px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.12em; text-transform:uppercase; }
-.autor { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--vermelho); text-decoration:none; }
-.autor::before { content:"[" counter(p, decimal-leading-zero) "] "; color:rgba(255,255,255,.6); }
-article.post:nth-of-type(even) .autor { color:var(--branco); }
-.data { flex:none; color:rgba(255,255,255,.75); }
-.foto { display:block; width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; box-shadow:0 0 0 1px rgba(240,20,47,.4); }
-
-.disco { position:relative; width:min(72%, 260px); aspect-ratio:1; margin:6px auto 0; }
-.disco::before { content:""; position:absolute; inset:-20%; z-index:-1; filter:blur(24px); background:radial-gradient(circle, rgba(240,20,47,.6), transparent 70%); }
-.vinil {
-    position:absolute; inset:0; border-radius:50%;
-    background:
-        repeating-radial-gradient(circle, rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
-        conic-gradient(from 20deg, #050102, #3a030a 12%, #050102 25%, #c10a1f 38%, #050102 50%, #3a030a 62%, #050102 75%, #f0142f 88%, #050102);
-    box-shadow:0 0 0 1px rgba(240,20,47,.75), 0 0 36px rgba(240,20,47,.4), 0 16px 44px rgba(0,0,0,.65);
-    animation:girar 7s linear infinite paused;
-}
-.vinil.tocando { animation-play-state:running; }
-.rotulo {
-    position:absolute; top:50%; left:50%; width:40%; height:40%; transform:translate(-50%,-50%); border-radius:50%; overflow:hidden;
-    display:grid; place-items:center; background:radial-gradient(circle at 35% 30%, #ff4a5c, var(--vermelho) 45%, var(--carmim));
-    box-shadow:0 0 0 5px rgba(0,0,0,.75), 0 0 20px rgba(240,20,47,.6); color:var(--branco); font-size:28px;
-}
-.rotulo img { width:100%; height:100%; object-fit:cover; }
-.furo { position:absolute; top:50%; left:50%; width:5%; height:5%; transform:translate(-50%,-50%); border-radius:50%; background:var(--preto); box-shadow:0 0 0 2px rgba(255,255,255,.7); }
-@keyframes girar { to { transform:rotate(360deg); } }
-.tocar {
-    display:block; margin:18px auto 0; width:48px; height:48px; border-radius:50%; border:none; font-size:18px; color:var(--branco);
-    background:linear-gradient(180deg, #ff2a3f, var(--carmim)); box-shadow:0 0 24px rgba(240,20,47,.6);
-}
-
-.titulo { margin-top:18px; font:400 32px/1 'Instrument Serif', serif; color:var(--branco); overflow-wrap:anywhere; }
-.legenda { margin-top:8px; line-height:1.55; font-weight:400; color:rgba(255,255,255,.88); overflow-wrap:anywhere; }
-.curtir, .apagar {
-    margin-top:14px; padding:7px 13px; background:none; border-radius:10px;
-    border:1px solid rgba(255,255,255,.5); font:700 10px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.1em;
-}
-.apagar { margin-left:10px; border-color:rgba(255,255,255,.3); color:rgba(255,255,255,.75); text-transform:uppercase; }
-.curtir[aria-pressed="true"] { background:var(--vermelho); border-color:var(--vermelho); color:var(--branco); box-shadow:0 0 18px rgba(240,20,47,.7); }
-
-dialog {
-    margin:auto; width:min(420px, calc(100% - 32px)); padding:26px; color:var(--branco);
-    background:linear-gradient(160deg, #1c1c1c, #000 70%); border:1px solid rgba(240,20,47,.55); border-radius:16px;
-    box-shadow:0 0 60px rgba(240,20,47,.25);
-}
-dialog::backdrop { background:rgba(0,0,0,.78); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
-dialog h2 {
-    font:400 40px/.95 'Instrument Serif', serif; text-transform:uppercase; color:var(--vermelho); margin-bottom:22px;
-    text-shadow:0 0 14px rgba(240,20,47,.85), 0 0 40px rgba(240,20,47,.45);
-}
-form { counter-reset:c; }
-.campo { display:block; margin-bottom:18px; counter-increment:c; }
-.campo span { display:block; margin-bottom:6px; font:700 10px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.14em; text-transform:uppercase; color:var(--vermelho); }
-.campo span::before { content:"[" counter(c, decimal-leading-zero) "] "; color:var(--branco); }
-.campo input, .campo textarea {
-    width:100%; padding:8px 0; background:transparent; color:var(--branco); border:none;
-    border-bottom:1px solid rgba(255,255,255,.28); font:400 15px 'Urbanist', sans-serif; resize:none;
-}
-.campo input:focus-visible, .campo textarea:focus-visible { outline:none; border-bottom-color:var(--vermelho); box-shadow:0 1px 0 var(--vermelho); }
-.campo input[type=file] { border:none; font-size:14px; }
-.campo input[type=file]::file-selector-button {
-    margin-right:12px; padding:7px 12px; background:none; color:var(--branco); border:1px solid var(--vermelho); border-radius:10px;
-    font:700 10px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
-}
-.acoes { display:flex; gap:12px; margin-top:10px; }
-.acoes button {
-    flex:1; padding:12px; border:1px solid rgba(255,255,255,.4); background:none; border-radius:12px;
-    font:700 11px 'Archivo', sans-serif; font-stretch:125%; letter-spacing:.12em; text-transform:uppercase;
-}
-.acoes .postar { background:linear-gradient(180deg, #ff2a3f, var(--carmim)); border-color:transparent; box-shadow:0 0 22px rgba(240,20,47,.5); }
-.acoes button:disabled { opacity:.6; cursor:wait; }
-.msg { min-height:1.4em; margin-top:12px; font-size:14px; font-weight:400; color:#ff6b7a; }
-
-@media (prefers-reduced-motion: reduce) { .vinil { animation:none; } }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="barra">
     <a class="marca" href="feed.html">Index</a>
     <span class="linha" aria-hidden="true"></span>
     <button id="novo" class="novo">Novo post</button>
+    <button id="perfil-btn" hidden>Perfil</button>
     <button id="sair">Sair</button>
 </header>
 
@@ -194,6 +54,7 @@ function sair() {
     location.replace("login.html");
 }
 $("sair").addEventListener("click", sair);
+$("perfil-btn").addEventListener("click", () => { location.href = "feed.html?u=" + encodeURIComponent(meuUsuario); });
 
 function el(tag, classe, texto) {
     const e = document.createElement(tag);
@@ -208,6 +69,7 @@ const formatarData = (iso) => new Date(iso).toLocaleDateString("pt-BR", { day: "
 const audio = new Audio();
 let atual = null;
 let meuUsuario = "";
+let aba = "posts", sequencia = false, fila = [];
 function soltar() {
     if (!atual) return;
     atual.botao.textContent = "▶";
@@ -216,7 +78,13 @@ function soltar() {
 }
 audio.addEventListener("play", () => { if (atual) { atual.botao.textContent = "⏸"; atual.vinil.classList.add("tocando"); } });
 audio.addEventListener("pause", () => { if (atual) { atual.botao.textContent = "▶"; atual.vinil.classList.remove("tocando"); } });
-audio.addEventListener("ended", soltar);
+// na playlist, ao terminar uma música toca a próxima da lista
+audio.addEventListener("ended", () => {
+    const i = atual ? fila.findIndex((x) => x.post.id === atual.id) : -1;
+    const prox = sequencia && i >= 0 ? fila[i + 1] : null;
+    soltar();
+    if (prox) alternar(prox.post, prox.botao, prox.vinil);
+});
 const cacheAudio = new Map();
 async function urlDoAudio(post) {
     if (cacheAudio.has(post.id)) return cacheAudio.get(post.id);
@@ -246,6 +114,79 @@ async function alternar(post, botao, vinil) {
     }
 }
 
+/* ---------- salvar na playlist e comentários ---------- */
+function botaoSalvar(p) {
+    const b = el("button", "curtir");
+    let salvo = p.salvo;
+    const pintar = () => { b.textContent = salvo ? "Salvo" : "Salvar"; b.setAttribute("aria-pressed", salvo); };
+    pintar();
+    b.addEventListener("click", async () => {
+        salvo = !salvo; pintar();
+        const r = await chamar({ acao: "salvar", post_id: p.id }).catch(() => ({ ok: false }));
+        if (!r.ok) { salvo = !salvo; pintar(); }
+    });
+    return b;
+}
+
+function painelComentarios(p, botao) {
+    const caixa = el("div", "comentarios");
+    caixa.hidden = true;
+    const lista = el("div", "lista-coment");
+    const form = el("form", "form-coment");
+    const campo = el("input");
+    campo.placeholder = "Escreva um comentário";
+    campo.maxLength = 300;
+    campo.setAttribute("aria-label", "Comentário");
+    const enviar = el("button", "curtir", "Enviar");
+    enviar.type = "submit";
+    form.append(campo, enviar);
+    caixa.append(lista, form);
+
+    let total = p.comentarios, carregado = false;
+    const rotulo = () => { botao.textContent = "Comentários (" + total + ")"; };
+    rotulo();
+
+    const linha = (c) => {
+        const l = el("p", "coment");
+        l.append(el("strong", "", "@" + c.usuario), " ", c.texto);
+        if (c.pode) {
+            const x = el("button", "", "Apagar");
+            x.addEventListener("click", async () => {
+                x.disabled = true;
+                const r = await chamar({ acao: "apagarComentario", comentario_id: c.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+                if (!r.ok) { x.disabled = false; alert(r.erro); return; }
+                l.remove(); total--; rotulo();
+            });
+            l.append(x);
+        }
+        return l;
+    };
+
+    botao.addEventListener("click", async () => {
+        caixa.hidden = !caixa.hidden;
+        if (caixa.hidden || carregado) return;
+        lista.replaceChildren(el("p", "vazio-coment", "Carregando…"));
+        const r = await chamar({ acao: "comentarios", post_id: p.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+        if (!r.ok) { lista.replaceChildren(el("p", "vazio-coment", r.erro)); return; }
+        carregado = true;
+        lista.replaceChildren(...(r.comentarios.length ? r.comentarios.map(linha) : [el("p", "vazio-coment", "Ainda sem comentários.")]));
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const texto = campo.value.trim();
+        if (!texto || !carregado) return;
+        enviar.disabled = true;
+        const r = await chamar({ acao: "comentar", post_id: p.id, texto }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+        enviar.disabled = false;
+        if (!r.ok) { alert(r.erro); return; }
+        lista.querySelector(".vazio-coment")?.remove();
+        lista.append(linha(r.comentario));
+        campo.value = ""; total++; rotulo();
+    });
+    return caixa;
+}
+
 /* ---------- cartão de post ---------- */
 function cartao(p) {
     const a = el("article", "post");
@@ -268,6 +209,7 @@ function cartao(p) {
         const botao = el("button", "tocar", "▶");
         botao.setAttribute("aria-label", "Tocar " + p.titulo);
         botao.addEventListener("click", () => alternar(p, botao, vinil));
+        fila.push({ post: p, botao, vinil });
         a.append(disco, botao);
     } else if (p.imagem) {
         const i = el("img", "foto");
@@ -288,7 +230,12 @@ function cartao(p) {
         const r = await chamar({ acao: "curtir", post_id: p.id }).catch(() => ({ ok: false }));
         if (!r.ok) { curti = !curti; total += curti ? 1 : -1; pintar(); }
     });
-    a.append(curtir);
+    const rodape = el("div", "rodape");
+    rodape.append(curtir);
+    if (p.audio) rodape.append(botaoSalvar(p));
+    const botaoComent = el("button", "curtir");
+    rodape.append(botaoComent);
+    a.append(rodape, painelComentarios(p, botaoComent));
     if (p.usuario === meuUsuario) {
         const apagar = el("button", "apagar", "Apagar");
         apagar.addEventListener("click", async () => {
@@ -299,7 +246,7 @@ function cartao(p) {
             if (atual && atual.id === p.id) { audio.pause(); soltar(); }
             a.remove();
         });
-        a.append(apagar);
+        rodape.append(apagar);
     }
     return a;
 }
@@ -308,19 +255,29 @@ function cartao(p) {
 async function carregar() {
     const lista = $("lista");
     lista.replaceChildren();
+    fila = [];
+    sequencia = !!perfil && aba === "playlist";
     if (perfil) {
         const v = el("a", "voltar", "← Voltar ao feed");
         v.href = "feed.html";
-        lista.append(v, el("h1", "perfil", "@" + perfil));
+        const abas = el("div", "abas");
+        [["posts", "Posts"], ["playlist", "Playlist"]].forEach(([id, nome]) => {
+            const b = el("button", "curtir", nome);
+            b.setAttribute("aria-pressed", aba === id);
+            b.addEventListener("click", () => { if (aba !== id) { aba = id; audio.pause(); soltar(); carregar(); } });
+            abas.append(b);
+        });
+        lista.append(v, el("h1", "perfil", "@" + perfil), abas);
         document.title = "@" + perfil;
     }
     let r;
-    try { r = await chamar({ acao: "feed", usuario: perfil }); }
+    try { r = await chamar(sequencia ? { acao: "playlist", usuario: perfil } : { acao: "feed", usuario: perfil }); }
     catch (e) { lista.append(el("p", "vazio", "Sem conexão com o servidor. Recarregue a página.")); return; }
     if (!r.ok) { lista.append(el("p", "vazio", r.erro)); return; }
     meuUsuario = r.eu;
+    $("perfil-btn").hidden = false;
     if (!r.posts.length) {
-        lista.append(el("p", "vazio", perfil ? "@" + perfil + " ainda não postou nada." : "Ainda não tem nada por aqui. Faça o primeiro post."));
+        lista.append(el("p", "vazio", sequencia ? "@" + perfil + " ainda não salvou nenhuma música." : perfil ? "@" + perfil + " ainda não postou nada." : "Ainda não tem nada por aqui. Faça o primeiro post."));
         return;
     }
     r.posts.forEach((p) => lista.append(cartao(p)));
@@ -348,9 +305,13 @@ const reduzirFoto = (file) => new Promise((ok, erro) => {
         URL.revokeObjectURL(img.src);
         ok(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
     };
-    img.onerror = () => erro(new Error("Não foi possível ler a foto."));
+    img.onerror = () => erro(new Error("Não foi possível ler a foto. Tente outra ou tire um print dela."));
     img.src = URL.createObjectURL(file);
 });
+
+const MIME_POR_EXTENSAO = { mp3:"audio/mpeg", m4a:"audio/mp4", mp4:"audio/mp4", aac:"audio/aac", wav:"audio/wav", ogg:"audio/ogg", oga:"audio/ogg" };
+// o iPhone costuma mandar o tipo da música vazio ou diferente do padrão, então vale a extensão primeiro
+const mimeDoAudio = (file) => MIME_POR_EXTENSAO[file.name.split(".").pop().toLowerCase()] || file.type;
 
 $("form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -358,6 +319,11 @@ $("form").addEventListener("submit", async (e) => {
     const msg = $("msg");
     if (!foto && !musica) { msg.textContent = "Escolha uma foto, uma música ou as duas."; return; }
     if (musica && musica.size > 8 * 1024 * 1024) { msg.textContent = "A música passa de 8 MB. Comprima o arquivo."; return; }
+    const mimeAudio = musica ? mimeDoAudio(musica) : "";
+    if (musica && !mimeAudio.startsWith("audio/")) {
+        msg.textContent = "Não reconheci esse formato de música (" + (musica.type || musica.name.split(".").pop()) + "). Use mp3, m4a ou wav.";
+        return;
+    }
     $("postar").disabled = true;
     msg.textContent = "Enviando…";
     try {
@@ -365,7 +331,7 @@ $("form").addEventListener("submit", async (e) => {
             acao: "postar",
             titulo: $("titulo-post").value, legenda: $("legenda-post").value,
             imagem: foto ? await reduzirFoto(foto) : "", imagem_mime: "image/jpeg",
-            audio: musica ? await lerBase64(musica) : "", audio_mime: musica ? musica.type : ""
+            audio: musica ? await lerBase64(musica) : "", audio_mime: mimeAudio
         });
         if (!r.ok) throw new Error(r.erro);
         $("form").reset();
