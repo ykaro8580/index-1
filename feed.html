@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Feed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600&family=Inter:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root { --noite:#12060a; --vinho:#5a0f0a; --vermelho:#e8300f; --laranja:#ff7a1a; --ambar:#ffb340; --creme:#f6e9d6; }
+* { margin:0; padding:0; box-sizing:border-box; }
+[hidden] { display:none !important; }
+body {
+    min-height:100dvh; color:var(--creme); font:300 16px 'Inter', sans-serif;
+    background:
+        radial-gradient(circle at 68% 20%, rgba(255,122,26,.5), rgba(232,48,15,.3) 28%, transparent 58%),
+        radial-gradient(circle at 10% 95%, rgba(90,15,10,.8), transparent 45%),
+        var(--noite);
+    background-attachment:fixed;
+}
+body::after {
+    content:""; position:fixed; inset:0; pointer-events:none; mix-blend-mode:overlay; opacity:.4;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+button { font:inherit; cursor:pointer; color:inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--ambar); outline-offset:3px; }
+
+.barra {
+    position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:16px;
+    padding:14px 20px; padding-top:calc(14px + env(safe-area-inset-top, 0px));
+    background:rgba(18,6,10,.85); backdrop-filter:blur(8px); border-bottom:1px dotted rgba(246,233,214,.3);
+}
+.marca { margin-right:auto; font:italic 600 26px 'Fraunces', serif; color:var(--creme); text-decoration:none; }
+.barra button, .voltar { background:none; border:none; font:400 13px 'Space Mono', monospace; text-decoration:underline dotted; color:var(--creme); }
+.barra .novo { padding:8px 14px; background:var(--laranja); color:var(--noite); border:none; text-decoration:none; }
+
+main { width:min(520px, 100%); margin:0 auto; padding:24px 16px 60px; display:flex; flex-direction:column; gap:26px; }
+.voltar { align-self:flex-start; }
+.perfil { font:italic 600 34px 'Fraunces', serif; }
+.vazio { text-align:center; line-height:1.6; }
+
+.post { padding:18px; background:rgba(18,6,10,.62); border:1px dotted rgba(246,233,214,.35); }
+.topo { display:flex; justify-content:space-between; margin-bottom:14px; font:400 13px 'Space Mono', monospace; }
+.autor { color:var(--ambar); text-decoration:none; }
+.data { color:rgba(246,233,214,.7); }
+.foto { display:block; width:100%; aspect-ratio:1; object-fit:cover; }
+
+.disco { position:relative; width:min(72%, 260px); aspect-ratio:1; margin:6px auto 0; }
+.disco::before { content:""; position:absolute; inset:-18%; z-index:-1; filter:blur(22px); background:radial-gradient(circle, rgba(255,140,30,.5), transparent 70%); }
+.vinil {
+    position:absolute; inset:0; border-radius:50%;
+    background:
+        repeating-radial-gradient(circle, rgba(0,0,0,.2) 0 1px, transparent 1px 5px),
+        conic-gradient(from 30deg, rgba(255,179,64,.75), rgba(232,48,15,.85), rgba(255,122,26,.7), rgba(90,15,10,.95),
+            rgba(255,179,64,.75), rgba(232,48,15,.85), rgba(255,122,26,.7), rgba(90,15,10,.95), rgba(255,179,64,.75));
+    box-shadow:0 14px 40px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,225,190,.25);
+    animation:girar 7s linear infinite paused;
+}
+.vinil.tocando { animation-play-state:running; }
+.rotulo { position:absolute; top:50%; left:50%; width:40%; height:40%; transform:translate(-50%,-50%); border-radius:50%; overflow:hidden; display:grid; place-items:center; background:radial-gradient(circle, var(--ambar), var(--laranja)); box-shadow:0 0 0 5px rgba(18,6,10,.6); color:var(--noite); font-size:28px; }
+.rotulo img { width:100%; height:100%; object-fit:cover; }
+.furo { position:absolute; top:50%; left:50%; width:5%; height:5%; transform:translate(-50%,-50%); border-radius:50%; background:var(--noite); box-shadow:0 0 0 2px rgba(246,233,214,.6); }
+@keyframes girar { to { transform:rotate(360deg); } }
+.tocar { display:block; margin:16px auto 0; width:48px; height:48px; border-radius:50%; border:none; background:var(--laranja); color:var(--noite); font-size:18px; }
+
+.apagar { margin:14px 0 0 10px; padding:6px 12px; background:none; border:1px dotted rgba(246,233,214,.35); font:400 14px 'Space Mono', monospace; color:rgba(246,233,214,.7); }
+.titulo { margin-top:16px; font:italic 600 24px 'Fraunces', serif; }
+.legenda { margin-top:6px; line-height:1.55; }
+.curtir { margin-top:14px; padding:6px 12px; background:none; border:1px dotted rgba(246,233,214,.6); font:400 14px 'Space Mono', monospace; }
+.curtir[aria-pressed="true"] { background:var(--vermelho); border-color:var(--vermelho); color:var(--creme); }
+
+dialog { margin:auto; width:min(420px, calc(100% - 32px)); padding:26px; background:var(--noite); color:var(--creme); border:1px solid rgba(246,233,214,.3); }
+dialog::backdrop { background:rgba(18,6,10,.8); }
+dialog h2 { font:italic 600 28px 'Fraunces', serif; margin-bottom:18px; }
+.campo { display:block; margin-bottom:16px; }
+.campo span { display:block; margin-bottom:4px; font:400 13px 'Space Mono', monospace; color:var(--ambar); }
+.campo input, .campo textarea { width:100%; padding:8px 0; background:transparent; color:var(--creme); border:none; border-bottom:1px dotted rgba(246,233,214,.6); font:400 15px 'Inter', sans-serif; resize:none; }
+.campo input[type=file] { border:none; font-size:14px; }
+.acoes { display:flex; gap:12px; margin-top:8px; }
+.acoes button { flex:1; padding:11px; border:1px solid var(--creme); background:none; }
+.acoes .postar { background:var(--laranja); border-color:var(--laranja); color:var(--noite); }
+.acoes button:disabled { opacity:.6; cursor:wait; }
+.msg { min-height:1.4em; margin-top:12px; font-size:14px; color:var(--ambar); }
+
+@media (prefers-reduced-motion: reduce) { .vinil { animation:none; } }
+</style>
+</head>
+<body>
+<header class="barra">
+    <a class="marca" href="feed.html">Index</a>
+    <button id="novo" class="novo">Novo post</button>
+    <button id="sair">Sair</button>
+</header>
+
+<main id="lista"></main>
+
+<dialog id="dialogo">
+    <form id="form">
+        <h2>Novo post</h2>
+        <label class="campo"><span>Foto</span><input id="imagem" type="file" accept="image/*"></label>
+        <label class="campo"><span>Música autoral</span><input id="audio" type="file" accept="audio/*"></label>
+        <label class="campo"><span>Título da música</span><input id="titulo-post" maxlength="60"></label>
+        <label class="campo"><span>Legenda</span><textarea id="legenda-post" rows="2" maxlength="200"></textarea></label>
+        <div class="acoes">
+            <button type="button" id="cancelar">Cancelar</button>
+            <button type="submit" class="postar" id="postar">Postar</button>
+        </div>
+        <p class="msg" id="msg" role="alert"></p>
+    </form>
+</dialog>
+
+<script src="config.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const perfil = new URLSearchParams(location.search).get("u");
+const token = (() => { try { return localStorage.getItem("token"); } catch (e) { return null; } })();
+if (!token) location.replace("login.html");
+
+async function chamar(dados) {
+    const r = await fetch(API, { method: "POST", body: JSON.stringify({ token, ...dados }) });
+    const j = await r.json();
+    if (!j.ok && /Sessão expirada/.test(j.erro || "")) sair();
+    return j;
+}
+function sair() {
+    try { localStorage.removeItem("token"); } catch (e) {}
+    location.replace("login.html");
+}
+$("sair").addEventListener("click", sair);
+
+function el(tag, classe, texto) {
+    const e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto !== undefined) e.textContent = texto;
+    return e;
+}
+const urlImagem = (id) => "https://lh3.googleusercontent.com/d/" + id;
+const formatarData = (iso) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+
+/* ---------- player: uma música por vez ---------- */
+const audio = new Audio();
+let atual = null;
+let meuUsuario = "";
+function soltar() {
+    if (!atual) return;
+    atual.botao.textContent = "▶";
+    atual.vinil.classList.remove("tocando");
+    atual = null;
+}
+audio.addEventListener("play", () => { if (atual) { atual.botao.textContent = "⏸"; atual.vinil.classList.add("tocando"); } });
+audio.addEventListener("pause", () => { if (atual) { atual.botao.textContent = "▶"; atual.vinil.classList.remove("tocando"); } });
+audio.addEventListener("ended", soltar);
+const cacheAudio = new Map();
+async function urlDoAudio(post) {
+    if (cacheAudio.has(post.id)) return cacheAudio.get(post.id);
+    const r = await chamar({ acao: "baixarAudio", post_id: post.id });
+    if (!r.ok) throw new Error(r.erro);
+    const bytes = Uint8Array.from(atob(r.dados), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: r.mime }));
+    cacheAudio.set(post.id, url);
+    return url;
+}
+async function alternar(post, botao, vinil) {
+    if (atual && atual.id === post.id) { audio.paused ? audio.play() : audio.pause(); return; }
+    audio.pause();
+    soltar();
+    atual = { id: post.id, botao, vinil };
+    botao.textContent = "…";
+    botao.disabled = true;
+    try {
+        audio.src = await urlDoAudio(post);
+        if (!atual || atual.id !== post.id) return; // clicou em outra música enquanto carregava
+        await audio.play();
+    } catch (err) {
+        if (atual && atual.id === post.id) soltar();
+        alert(err.message || "Não foi possível tocar a música.");
+    } finally {
+        botao.disabled = false;
+    }
+}
+
+/* ---------- cartão de post ---------- */
+function cartao(p) {
+    const a = el("article", "post");
+    const topo = el("header", "topo");
+    const autor = el("a", "autor", "@" + p.usuario);
+    autor.href = "feed.html?u=" + encodeURIComponent(p.usuario);
+    topo.append(autor, el("time", "data", formatarData(p.criado_em)));
+    a.append(topo);
+
+    if (p.audio) {
+        const disco = el("div", "disco"), vinil = el("div", "vinil"), rotulo = el("span", "rotulo");
+        if (p.imagem) {
+            const i = new Image();
+            i.src = urlImagem(p.imagem);
+            i.alt = "Capa de " + p.titulo;
+            rotulo.append(i);
+        } else rotulo.textContent = "♪";
+        vinil.append(rotulo, el("span", "furo"));
+        disco.append(vinil);
+        const botao = el("button", "tocar", "▶");
+        botao.setAttribute("aria-label", "Tocar " + p.titulo);
+        botao.addEventListener("click", () => alternar(p, botao, vinil));
+        a.append(disco, botao);
+    } else if (p.imagem) {
+        const i = el("img", "foto");
+        i.src = urlImagem(p.imagem);
+        i.alt = p.legenda || "Foto de @" + p.usuario;
+        i.loading = "lazy";
+        a.append(i);
+    }
+    if (p.titulo) a.append(el("h2", "titulo", p.titulo));
+    if (p.legenda) a.append(el("p", "legenda", p.legenda));
+
+    const curtir = el("button", "curtir");
+    let curti = p.curti, total = p.curtidas;
+    const pintar = () => { curtir.textContent = "♥ " + total; curtir.setAttribute("aria-pressed", curti); };
+    pintar();
+    curtir.addEventListener("click", async () => {
+        curti = !curti; total += curti ? 1 : -1; pintar();
+        const r = await chamar({ acao: "curtir", post_id: p.id }).catch(() => ({ ok: false }));
+        if (!r.ok) { curti = !curti; total += curti ? 1 : -1; pintar(); }
+    });
+    a.append(curtir);
+    if (p.usuario === meuUsuario) {
+        const apagar = el("button", "apagar", "Apagar");
+        apagar.addEventListener("click", async () => {
+            if (!confirm("Apagar este post? Não dá para desfazer.")) return;
+            apagar.disabled = true;
+            const r = await chamar({ acao: "apagar", post_id: p.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+            if (!r.ok) { apagar.disabled = false; alert(r.erro); return; }
+            if (atual && atual.id === p.id) { audio.pause(); soltar(); }
+            a.remove();
+        });
+        a.append(apagar);
+    }
+    return a;
+}
+
+/* ---------- carregar ---------- */
+async function carregar() {
+    const lista = $("lista");
+    lista.replaceChildren();
+    if (perfil) {
+        const v = el("a", "voltar", "← Voltar ao feed");
+        v.href = "feed.html";
+        lista.append(v, el("h1", "perfil", "@" + perfil));
+        document.title = "@" + perfil;
+    }
+    let r;
+    try { r = await chamar({ acao: "feed", usuario: perfil }); }
+    catch (e) { lista.append(el("p", "vazio", "Sem conexão com o servidor. Recarregue a página.")); return; }
+    if (!r.ok) { lista.append(el("p", "vazio", r.erro)); return; }
+    meuUsuario = r.eu;
+    if (!r.posts.length) {
+        lista.append(el("p", "vazio", perfil ? "@" + perfil + " ainda não postou nada." : "Ainda não tem nada por aqui. Faça o primeiro post."));
+        return;
+    }
+    r.posts.forEach((p) => lista.append(cartao(p)));
+}
+
+/* ---------- novo post ---------- */
+const dialogo = $("dialogo");
+$("novo").addEventListener("click", () => { $("msg").textContent = ""; dialogo.showModal(); });
+$("cancelar").addEventListener("click", () => dialogo.close());
+
+const lerBase64 = (file) => new Promise((ok, erro) => {
+    const r = new FileReader();
+    r.onload = () => ok(r.result.split(",")[1]);
+    r.onerror = () => erro(new Error("Não foi possível ler o arquivo."));
+    r.readAsDataURL(file);
+});
+// reduz a foto para 1080 px e converte para jpg antes de enviar
+const reduzirFoto = (file) => new Promise((ok, erro) => {
+    const img = new Image();
+    img.onload = () => {
+        const k = Math.min(1, 1080 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        ok(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = () => erro(new Error("Não foi possível ler a foto."));
+    img.src = URL.createObjectURL(file);
+});
+
+$("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const foto = $("imagem").files[0], musica = $("audio").files[0];
+    const msg = $("msg");
+    if (!foto && !musica) { msg.textContent = "Escolha uma foto, uma música ou as duas."; return; }
+    if (musica && musica.size > 8 * 1024 * 1024) { msg.textContent = "A música passa de 8 MB. Comprima o arquivo."; return; }
+    $("postar").disabled = true;
+    msg.textContent = "Enviando…";
+    try {
+        const r = await chamar({
+            acao: "postar",
+            titulo: $("titulo-post").value, legenda: $("legenda-post").value,
+            imagem: foto ? await reduzirFoto(foto) : "", imagem_mime: "image/jpeg",
+            audio: musica ? await lerBase64(musica) : "", audio_mime: musica ? musica.type : ""
+        });
+        if (!r.ok) throw new Error(r.erro);
+        $("form").reset();
+        dialogo.close();
+        carregar();
+    } catch (err) {
+        msg.textContent = err.message || "Não foi possível postar. Tente de novo.";
+    } finally {
+        $("postar").disabled = false;
+    }
+});
+
+if (token) carregar();
+</script>
+</body>
+</html>

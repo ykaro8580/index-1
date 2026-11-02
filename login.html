@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600&family=Inter:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root { --noite:#12060a; --vinho:#5a0f0a; --vermelho:#e8300f; --laranja:#ff7a1a; --ambar:#ffb340; --creme:#f6e9d6; }
+* { margin:0; padding:0; box-sizing:border-box; }
+[hidden] { display:none !important; }
+
+body {
+    min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:30px; padding:32px 20px; color:var(--creme); font:300 16px 'Inter', sans-serif;
+    background:
+        radial-gradient(circle at 68% 40%, rgba(255,122,26,.55), rgba(232,48,15,.35) 28%, transparent 58%),
+        radial-gradient(circle at 10% 95%, rgba(90,15,10,.8), transparent 45%),
+        var(--noite);
+}
+body::after {
+    content:""; position:fixed; inset:0; pointer-events:none; mix-blend-mode:overlay; opacity:.4;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* disco: a única peça que se move sozinha; acelera quando está enviando */
+.disco { position:relative; width:min(46vw, 200px); aspect-ratio:1; }
+.disco::before {
+    content:""; position:absolute; inset:-22%; z-index:-1; filter:blur(26px);
+    background:radial-gradient(circle, rgba(255,140,30,.6), rgba(232,48,15,.28) 45%, transparent 70%);
+}
+.vinil {
+    position:absolute; inset:0; border-radius:50%;
+    background:
+        repeating-radial-gradient(circle, rgba(0,0,0,.2) 0 1px, transparent 1px 5px),
+        conic-gradient(from 30deg, rgba(255,179,64,.75), rgba(232,48,15,.85), rgba(255,122,26,.7), rgba(90,15,10,.95),
+            rgba(255,179,64,.75), rgba(232,48,15,.85), rgba(255,122,26,.7), rgba(90,15,10,.95), rgba(255,179,64,.75));
+    box-shadow:0 18px 50px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,225,190,.25);
+    animation:girar 9s linear infinite;
+}
+.disco.carregando .vinil { animation-duration:1.4s; }
+.rotulo {
+    position:absolute; top:50%; left:50%; width:38%; height:38%; transform:translate(-50%,-50%);
+    border-radius:50%; display:grid; place-items:center;
+    background:radial-gradient(circle, var(--ambar), var(--laranja));
+    box-shadow:0 0 0 6px rgba(18,6,10,.6);
+    font:700 10px 'Space Mono', monospace; color:var(--noite);
+}
+.furo { position:absolute; top:50%; left:50%; width:5%; height:5%; transform:translate(-50%,-50%); border-radius:50%; background:var(--noite); box-shadow:0 0 0 2px rgba(246,233,214,.6); }
+@keyframes girar { to { transform:rotate(360deg); } }
+
+/* cartão */
+.card {
+    width:min(380px, 100%); padding:28px; background:rgba(18,6,10,.72);
+    border:1px dotted rgba(246,233,214,.4);
+}
+h1 { font:italic 600 34px 'Fraunces', serif; margin-bottom:22px; }
+.campo { display:block; margin-bottom:18px; }
+.campo span { display:block; margin-bottom:4px; font:400 13px 'Space Mono', monospace; color:var(--ambar); }
+input {
+    width:100%; padding:8px 0; background:transparent; color:var(--creme);
+    border:none; border-bottom:1px dotted rgba(246,233,214,.6); font:400 16px 'Inter', sans-serif;
+}
+input:focus-visible { outline:none; border-bottom:1px solid var(--ambar); }
+button { font:inherit; cursor:pointer; }
+.principal {
+    width:100%; margin-top:8px; padding:12px; border:none; background:var(--laranja); color:var(--noite);
+    font-weight:400; transition:transform .2s;
+}
+.principal:hover:not(:disabled) { transform:translateY(-2px); }
+.principal:disabled { opacity:.6; cursor:wait; }
+.trocar { display:block; margin:18px auto 0; background:none; border:none; color:var(--creme); font:400 13px 'Space Mono', monospace; text-decoration:underline dotted; }
+button:focus-visible { outline:2px solid var(--ambar); outline-offset:3px; }
+.msg { min-height:1.4em; margin-top:14px; font-size:14px; color:var(--ambar); }
+
+@media (prefers-reduced-motion: reduce) { .vinil { animation:none; } }
+</style>
+</head>
+<body>
+    <div class="disco" id="disco">
+        <div class="vinil"><span class="rotulo">Lado A</span><span class="furo"></span></div>
+    </div>
+
+    <main class="card">
+        <form id="form">
+            <h1 id="titulo">Entrar</h1>
+            <label class="campo" id="campo-nome" hidden>
+                <span>Seu nome</span>
+                <input id="nome" autocomplete="name" maxlength="40">
+            </label>
+            <label class="campo">
+                <span>Usuário</span>
+                <input id="usuario" autocomplete="username" autocapitalize="none" required>
+            </label>
+            <label class="campo">
+                <span>Senha</span>
+                <input id="senha" type="password" autocomplete="current-password" required>
+            </label>
+            <label class="campo" id="campo-convite" hidden>
+                <span>Código de convite</span>
+                <input id="convite" autocomplete="off" autocapitalize="none">
+            </label>
+            <button class="principal" id="enviar" type="submit">Entrar</button>
+            <button class="trocar" id="trocar" type="button">Quero criar uma conta</button>
+            <p class="msg" id="msg" role="alert"></p>
+        </form>
+        <div id="ola" hidden>
+            <h1 id="ola-nome"></h1>
+            <p>Você está dentro. O feed vem na próxima etapa.</p>
+        </div>
+    </main>
+
+<script src="config.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let modo = "login";
+
+// sem cabeçalho Content-Type, o navegador não faz preflight e o Apps Script aceita
+async function chamar(dados) {
+    const r = await fetch(API, { method: "POST", body: JSON.stringify(dados) });
+    return r.json();
+}
+
+function aplicarModo() {
+    const criando = modo === "cadastrar";
+    $("titulo").textContent = criando ? "Criar conta" : "Entrar";
+    $("enviar").textContent = criando ? "Criar conta" : "Entrar";
+    $("trocar").textContent = criando ? "Já tenho conta" : "Quero criar uma conta";
+    $("campo-nome").hidden = !criando;
+    $("campo-convite").hidden = !criando;
+    $("senha").autocomplete = criando ? "new-password" : "current-password";
+    $("msg").textContent = "";
+}
+
+function entrou(usuario) {
+    $("form").hidden = true;
+    $("ola").hidden = false;
+    $("ola-nome").textContent = "Oi, @" + usuario;
+    location.href = "feed.html";
+}
+
+$("trocar").addEventListener("click", () => {
+    modo = modo === "login" ? "cadastrar" : "login";
+    aplicarModo();
+});
+
+$("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (API.startsWith("COLE")) {
+        $("msg").textContent = "Falta colar a URL do Apps Script no começo do código.";
+        return;
+    }
+    $("enviar").disabled = true;
+    $("disco").classList.add("carregando");
+    $("msg").textContent = "";
+    try {
+        const r = await chamar({ acao: modo, usuario: $("usuario").value, senha: $("senha").value, nome: $("nome").value, convite: $("convite").value });
+        if (!r.ok) throw new Error(r.erro);
+        try { localStorage.setItem("token", r.token); } catch (err) {}
+        entrou(r.usuario);
+    } catch (err) {
+        $("msg").textContent = err.message || "Sem conexão com o servidor. Tente de novo.";
+    } finally {
+        $("enviar").disabled = false;
+        $("disco").classList.remove("carregando");
+    }
+});
+
+// já tem sessão salva? entra direto
+(async () => {
+    if (API.startsWith("COLE")) return;
+    let token = null;
+    try { token = localStorage.getItem("token"); } catch (err) {}
+    if (!token) return;
+    try {
+        const r = await chamar({ acao: "eu", token });
+        if (r.ok) entrou(r.usuario);
+    } catch (err) {}
+})();
+</script>
+</body>
+</html>
