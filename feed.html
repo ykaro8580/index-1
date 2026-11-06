@@ -246,6 +246,66 @@ function painelComentarios(p, botao) {
     return caixa;
 }
 
+/* ---------- cartão de review (aparece no feed junto dos posts) ---------- */
+const NOMES = { filme: "Filme", musica: "Música", album: "Álbum" };
+const estrelas = (n) => "★".repeat(Math.floor(n)) + (n % 1 ? "½" : "") + " " + String(n).replace(".", ",");
+function cartaoReview(r) {
+    const a = el("article", "post review");
+    const topo = el("header", "topo");
+    const autor = el("a", "autor", "@" + r.usuario);
+    autor.href = "feed.html?u=" + encodeURIComponent(r.usuario);
+    const quem = el("div", "quem");
+    if (r.avatar) {
+        const av = el("img", "avatar-mini");
+        av.src = urlImagem(r.avatar); av.alt = ""; av.loading = "lazy";
+        quem.append(av);
+    }
+    quem.append(autor);
+    topo.append(quem, el("time", "data", formatarData(r.criado_em)));
+    const corpo = el("div", "review-corpo");
+    if (r.capa_url) {
+        const i = el("img", "capa");
+        i.src = r.capa_url; i.alt = "Capa de " + r.titulo; i.loading = "lazy";
+        corpo.append(i);
+    }
+    const info = el("div", "review-info");
+    const t = el("a", "titulo", r.titulo);
+    t.href = "reviews.html?item=" + encodeURIComponent(r.item_id);
+    info.append(el("p", "categoria", NOMES[r.categoria] || r.categoria), t);
+    if (r.detalhe) info.append(el("p", "detalhe", r.detalhe));
+    info.append(el("p", "nota", estrelas(r.nota)));
+    corpo.append(info);
+    a.append(topo, corpo);
+    if (r.texto) a.append(el("p", "legenda", r.texto));
+
+    const rodape = el("div", "rodape");
+    const curtir = el("button", "curtir");
+    let curti = r.curti, total = r.curtidas;
+    const pintar = () => { curtir.textContent = "♥ " + total; curtir.setAttribute("aria-pressed", curti); };
+    pintar();
+    curtir.addEventListener("click", async () => {
+        curti = !curti; total += curti ? 1 : -1; pintar();
+        const x = await chamar({ acao: "curtir", post_id: r.id }).catch(() => ({ ok: false }));
+        if (!x.ok) { curti = !curti; total += curti ? 1 : -1; pintar(); }
+    });
+    const botaoComent = el("button", "curtir");
+    rodape.append(curtir, botaoComent);
+    a.append(rodape, painelComentarios(r, botaoComent));
+    if (r.usuario === meuUsuario) {
+        const apagar = el("button", "apagar", "Apagar");
+        apagar.addEventListener("click", async () => {
+            if (!confirm("Apagar esta review? Não dá para desfazer.")) return;
+            apagar.disabled = true;
+            const x = await chamar({ acao: "apagarReview", review_id: r.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+            if (!x.ok) { apagar.disabled = false; alert(x.erro); return; }
+            a.remove();
+        });
+        rodape.append(apagar);
+    }
+    return a;
+}
+
+
 /* ---------- cartão de post ---------- */
 function cartao(p) {
     const a = el("article", "post");
@@ -676,7 +736,7 @@ async function carregar() {
         lista.append(el("p", "vazio", sequencia ? "@" + perfil + " ainda não salvou nenhuma música." : perfil ? "@" + perfil + " ainda não postou nada." : "Ainda não tem nada por aqui. Faça o primeiro post."));
         return;
     }
-    r.posts.forEach((p) => lista.append(cartao(p)));
+    r.posts.forEach((p) => lista.append(p.kind === "review" ? cartaoReview(p) : cartao(p)));
 }
 
 /* ---------- novo post ---------- */
