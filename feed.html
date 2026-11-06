@@ -13,13 +13,22 @@
 <body>
 <header class="barra">
     <a class="marca" href="feed.html">Index</a>
-    <span class="linha" aria-hidden="true"></span>
-    <button id="novo" class="novo">Novo post</button>
-    <button id="ir-playlists">Playlists</button>
-    <button id="ir-reviews">Reviews</button>
-    <button id="perfil-btn" hidden>Perfil</button>
-    <button id="sair">Sair</button>
+    <button id="menu-btn" class="menu-btn" aria-expanded="false" aria-controls="menu">Menu</button>
+    <nav id="menu" class="menu" aria-label="Principal">
+        <button id="ir-feed">Feed</button>
+        <button id="ir-playlists">Playlists</button>
+        <button id="ir-reviews">Reviews</button>
+        <button id="perfil-btn" hidden>Perfil</button>
+        <button id="sair">Sair</button>
+    </nav>
 </header>
+
+<div class="fab-menu" id="fab-menu" hidden>
+    <button type="button" data-tipo="review">Review</button>
+    <button type="button" data-tipo="foto">Foto</button>
+    <button type="button" data-tipo="musica">Música</button>
+</div>
+<button type="button" class="fab" id="fab" aria-label="Criar" aria-expanded="false" aria-controls="fab-menu">+</button>
 
 <aside class="biblioteca" id="biblioteca" aria-label="Playlists"></aside>
 
@@ -27,21 +36,46 @@
 
 <dialog id="dialogo">
     <form id="form">
-        <h2>Novo post</h2>
-        <label class="campo"><span>Foto</span><input id="imagem" type="file" accept="image/*"></label>
-        <label class="campo"><span>Música autoral</span><input id="audio" type="file" accept="audio/*"></label>
-        <div class="gravador">
+        <h2 id="novo-titulo">Novo post</h2>
+        <label class="campo"><span id="rot-foto">Foto</span><input id="imagem" type="file" accept="image/*"></label>
+        <label class="campo so-musica"><span>Música autoral</span><input id="audio" type="file" accept="audio/*"></label>
+        <div class="gravador so-musica">
             <button type="button" id="gravar">Gravar agora</button>
             <span id="tempo"></span>
             <audio id="previa" controls hidden></audio>
         </div>
-        <label class="campo"><span>Título da música</span><input id="titulo-post" maxlength="60"></label>
+        <label class="campo so-musica"><span>Título da música</span><input id="titulo-post" maxlength="60"></label>
         <label class="campo"><span>Legenda</span><textarea id="legenda-post" rows="2" maxlength="200"></textarea></label>
         <div class="acoes">
             <button type="button" id="cancelar">Cancelar</button>
             <button type="submit" class="postar" id="postar">Postar</button>
         </div>
         <p class="msg" id="msg" role="alert"></p>
+    </form>
+</dialog>
+
+<dialog id="rv-dialogo">
+    <form id="rv-form">
+        <h2>Nova review</h2>
+        <div class="abas" id="rv-cats"></div>
+        <div id="rv-area-busca">
+            <label class="campo"><span>Buscar título</span><input id="rv-busca" autocomplete="off" maxlength="80"></label>
+            <div id="rv-resultados"></div>
+            <button type="button" class="link" id="rv-manual-btn">Não achei, preencher à mão</button>
+        </div>
+        <div id="rv-area-manual" hidden>
+            <label class="campo"><span>Título</span><input id="rv-m-titulo" maxlength="120"></label>
+            <label class="campo"><span>Ano ou artista</span><input id="rv-m-detalhe" maxlength="120"></label>
+            <button type="button" class="link" id="rv-voltar-busca">Voltar para a busca</button>
+        </div>
+        <div id="rv-escolhido" class="escolhido" hidden></div>
+        <label class="campo"><span>Nota: <b id="rv-nota-rotulo"></b></span><input id="rv-nota" type="range" min="0.5" max="5" step="0.5" value="3"></label>
+        <label class="campo"><span>Sua review (opcional)</span><textarea id="rv-texto" rows="4" maxlength="1500"></textarea></label>
+        <div class="acoes">
+            <button type="button" id="rv-cancelar">Cancelar</button>
+            <button type="submit" class="postar" id="rv-postar">Postar</button>
+        </div>
+        <p class="msg" id="rv-msg" role="alert"></p>
     </form>
 </dialog>
 
@@ -117,8 +151,13 @@ function sair() {
     location.replace("login.html");
 }
 $("sair").addEventListener("click", sair);
-$("ir-reviews").addEventListener("click", () => { location.href = "reviews.html"; });
+$("menu-btn").addEventListener("click", () => {
+    const aberto = $("menu").classList.toggle("aberto");
+    $("menu-btn").setAttribute("aria-expanded", aberto);
+});
+$("ir-feed").addEventListener("click", () => { location.href = "feed.html"; });
 $("ir-playlists").addEventListener("click", () => { location.href = "feed.html?pl=lista"; });
+$("ir-reviews").addEventListener("click", () => { location.href = "reviews.html"; });
 $("perfil-btn").addEventListener("click", () => { location.href = "feed.html?u=" + encodeURIComponent(meuUsuario); });
 
 function el(tag, classe, texto) {
@@ -741,7 +780,15 @@ async function carregar() {
 
 /* ---------- novo post ---------- */
 const dialogo = $("dialogo");
-$("novo").addEventListener("click", () => { $("msg").textContent = ""; dialogo.showModal(); });
+function abrirNovo(modo) {
+    dialogo.dataset.modo = modo;
+    $("novo-titulo").textContent = modo === "foto" ? "Nova foto" : "Nova música";
+    $("rot-foto").textContent = modo === "foto" ? "Foto" : "Capa (opcional)";
+    $("form").reset();
+    limparGravacao();
+    $("msg").textContent = "";
+    dialogo.showModal();
+}
 $("cancelar").addEventListener("click", () => dialogo.close());
 
 const lerBase64 = (file) => new Promise((ok, erro) => {
@@ -871,7 +918,9 @@ $("form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const foto = $("imagem").files[0], musica = gravacao || $("audio").files[0];
     const msg = $("msg");
-    if (!foto && !musica) { msg.textContent = "Escolha uma foto, uma música ou as duas."; return; }
+    const modo = dialogo.dataset.modo;
+    if (modo === "foto" && !foto) { msg.textContent = "Escolha uma foto."; return; }
+    if (modo === "musica" && !musica) { msg.textContent = "Escolha um arquivo de música ou grave uma."; return; }
     if (musica && musica.size > 8 * 1024 * 1024) { msg.textContent = "A música passa de 8 MB. Comprima o arquivo."; return; }
     const mimeAudio = musica ? mimeDoAudio(musica) : "";
     if (musica && !mimeAudio.startsWith("audio/")) {
@@ -890,7 +939,7 @@ $("form").addEventListener("submit", async (e) => {
         if (!r.ok) throw new Error(r.erro);
         $("form").reset();
         dialogo.close();
-        carregar();
+        recarregar();
     } catch (err) {
         msg.textContent = err.message || "Não foi possível postar. Tente de novo.";
     } finally {
@@ -898,12 +947,117 @@ $("form").addEventListener("submit", async (e) => {
     }
 });
 
-if (token) {
-    carregarBiblioteca();
+/* ---------- novaRv review ---------- */
+const dRv = $("rv-dialogo");
+let novaRv = "filme", escolhidoRv = null, buscaIdRv = 0, esperaRv = null;
+
+function pintarCategoriasRv() {
+    $("rv-cats").replaceChildren(...[["filme", "Filme"], ["musica", "Música"], ["album", "Álbum"]].map(([id, nome]) => {
+        const b = el("button", "curtir", nome);
+        b.type = "button";
+        b.setAttribute("aria-pressed", novaRv === id);
+        b.addEventListener("click", () => { novaRv = id; limparEscolhaRv(); pintarCategoriasRv(); });
+        return b;
+    }));
+}
+function limparEscolhaRv() {
+    escolhidoRv = null; buscaIdRv++;
+    $("rv-escolhido").hidden = true; $("rv-area-busca").hidden = false; $("rv-area-manual").hidden = true;
+    $("rv-busca").value = ""; $("rv-resultados").replaceChildren();
+}
+function escolherRv(item) {
+    escolhidoRv = item;
+    const caixa = $("rv-escolhido");
+    caixa.replaceChildren();
+    if (item.capa_url) { const i = el("img", "capa"); i.src = item.capa_url; i.alt = ""; caixa.append(i); }
+    const info = el("div", "review-info");
+    info.append(el("p", "detalhe", item.titulo), el("p", "categoria", item.detalhe));
+    const trocar = el("button", "link", "Trocar");
+    trocar.type = "button";
+    trocar.addEventListener("click", limparEscolhaRv);
+    info.append(trocar);
+    caixa.append(info);
+    caixa.hidden = false; $("rv-area-busca").hidden = true;
+}
+async function buscarRv() {
+    const termo = $("rv-busca").value.trim(), id = ++buscaIdRv, caixa = $("rv-resultados");
+    if (termo.length < 2) { caixa.replaceChildren(); return; }
+    caixa.replaceChildren(el("p", "vazio-coment", "Buscando…"));
+    const r = await chamar({ acao: "buscarItem", categoria: novaRv, termo }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+    if (id !== buscaIdRv) return;
+    if (!r.ok) { caixa.replaceChildren(el("p", "vazio-coment", r.erro)); return; }
+    if (!r.itens.length) { caixa.replaceChildren(el("p", "vazio-coment", "Nada encontrado. Tente outro nome ou preencha à mão.")); return; }
+    caixa.replaceChildren(...r.itens.map((item) => {
+        const b = el("button", "resultado");
+        b.type = "button";
+        if (item.capa_url) { const i = new Image(); i.src = item.capa_url; i.alt = ""; b.append(i); }
+        const t = el("span", "", item.titulo + (item.detalhe ? " (" + item.detalhe + ")" : ""));
+        b.append(t);
+        b.addEventListener("click", () => escolherRv(item));
+        return b;
+    }));
+}
+$("rv-busca").addEventListener("input", () => { clearTimeout(esperaRv); esperaRv = setTimeout(buscarRv, 450); });
+$("rv-manual-btn").addEventListener("click", () => { $("rv-area-busca").hidden = true; $("rv-area-manual").hidden = false; });
+$("rv-voltar-busca").addEventListener("click", () => { $("rv-area-manual").hidden = true; $("rv-area-busca").hidden = false; });
+const pintarNotaRv = () => { $("rv-nota-rotulo").textContent = estrelas(Number($("rv-nota").value)); };
+$("rv-nota").addEventListener("input", pintarNotaRv);
+
+$("rv-cancelar").addEventListener("click", () => dRv.close());
+
+$("rv-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("rv-msg");
+    const manual = !$("rv-area-manual").hidden;
+    const item = manual ? { item_id: "", titulo: $("rv-m-titulo").value.trim(), detalhe: $("rv-m-detalhe").value.trim(), capa_url: "" } : escolhidoRv;
+    if (!item || !item.titulo) { msg.textContent = "Escolha um título na busca ou preencha à mão."; return; }
+    $("rv-postar").disabled = true;
+    msg.textContent = "Enviando…";
+    try {
+        const r = await chamar({ acao: "postarReview", categoria: novaRv, ...item, nota: Number($("rv-nota").value), texto: $("rv-texto").value });
+        if (!r.ok) throw new Error(r.erro);
+        $("rv-form").reset();
+        dRv.close();
+        recarregar();
+    } catch (err) {
+        msg.textContent = err.message || "Não foi possível postar. Tente de novo.";
+    } finally {
+        $("rv-postar").disabled = false;
+    }
+});
+
+function abrirReview() { $("rv-msg").textContent = ""; pintarCategoriasRv(); limparEscolhaRv(); pintarNotaRv(); dRv.showModal(); }
+
+function recarregar() {
     if (plParam === "lista") verBiblioteca();
     else if (plParam) verPlaylist(plParam, perfil);
     else carregar();
 }
+function criar(tipo) { if (tipo === "review") abrirReview(); else abrirNovo(tipo); }
+/* ---------- botão + (criar) ---------- */
+const fab = $("fab"), fabMenu = $("fab-menu");
+function fecharFab() {
+    fabMenu.hidden = true;
+    fab.classList.remove("aberto");
+    fab.setAttribute("aria-expanded", "false");
+}
+fab.addEventListener("click", () => {
+    const abrir = fabMenu.hidden;
+    fabMenu.hidden = !abrir;
+    fab.classList.toggle("aberto", abrir);
+    fab.setAttribute("aria-expanded", abrir);
+});
+document.addEventListener("click", (e) => { if (!fabMenu.hidden && !e.target.closest("#fab, #fab-menu")) fecharFab(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharFab(); });
+fabMenu.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { fecharFab(); criar(b.dataset.tipo); }));
+
+if (token) {
+    carregarBiblioteca();
+    recarregar();
+}
+// vindo da página de reviews: já abre o que foi escolhido no botão +
+const novoParam = new URLSearchParams(location.search).get("novo");
+if (["foto", "musica", "review"].includes(novoParam)) { history.replaceState(null, "", "feed.html"); criar(novoParam); }
 </script>
 </body>
 </html>

@@ -13,13 +13,25 @@
 <body>
 <header class="barra">
     <a class="marca" href="feed.html">Index</a>
-    <button id="ir-feed">Feed</button>
-    <button id="novo" class="novo">Nova review</button>
-    <button id="sair">Sair</button>
+    <button id="menu-btn" class="menu-btn" aria-expanded="false" aria-controls="menu">Menu</button>
+    <nav id="menu" class="menu" aria-label="Principal">
+        <button id="ir-feed">Feed</button>
+        <button id="ir-playlists">Playlists</button>
+        <button id="ir-reviews">Reviews</button>
+        <button id="perfil-btn" hidden>Perfil</button>
+        <button id="sair">Sair</button>
+    </nav>
 </header>
 
 <main id="lista"></main>
 <p class="credito">Filmes: dados e pôsteres do TMDB, sem aval ou certificação do TMDB. Músicas e álbuns: Apple.</p>
+
+<div class="fab-menu" id="fab-menu" hidden>
+    <button type="button" data-tipo="review">Review</button>
+    <button type="button" data-tipo="foto">Foto</button>
+    <button type="button" data-tipo="musica">Música</button>
+</div>
+<button type="button" class="fab" id="fab" aria-label="Criar" aria-expanded="false" aria-controls="fab-menu">+</button>
 
 <dialog id="dialogo">
     <form id="form">
@@ -75,7 +87,14 @@ function el(tag, classe, texto) {
 const formatarData = (iso) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 const estrelas = (n) => "★".repeat(Math.floor(n)) + (n % 1 ? "½" : "") + " " + String(n).replace(".", ",");
 $("sair").addEventListener("click", sair);
+$("menu-btn").addEventListener("click", () => {
+    const aberto = $("menu").classList.toggle("aberto");
+    $("menu-btn").setAttribute("aria-expanded", aberto);
+});
 $("ir-feed").addEventListener("click", () => { location.href = "feed.html"; });
+$("ir-playlists").addEventListener("click", () => { location.href = "feed.html?pl=lista"; });
+$("ir-reviews").addEventListener("click", () => { location.href = "reviews.html"; });
+$("perfil-btn").addEventListener("click", () => { location.href = "feed.html?u=" + encodeURIComponent(meuUsuario); });
 
 function painelComentarios(p, botao) {
     const caixa = el("div", "comentarios");
@@ -211,6 +230,7 @@ async function carregar() {
     catch (e) { lista.append(el("p", "vazio", "Sem conexão com o servidor. Recarregue a página.")); return; }
     if (!r.ok) { lista.append(el("p", "vazio", r.erro)); return; }
     meuUsuario = r.eu;
+    $("perfil-btn").hidden = false;
     if (filtroItem && r.reviews.length) {
         const p = r.reviews[0];
         document.title = p.titulo;
@@ -279,7 +299,7 @@ $("manual-btn").addEventListener("click", () => { $("area-busca").hidden = true;
 $("voltar-busca").addEventListener("click", () => { $("area-manual").hidden = true; $("area-busca").hidden = false; });
 const pintarNota = () => { $("nota-rotulo").textContent = estrelas(Number($("nota").value)); };
 $("nota").addEventListener("input", pintarNota);
-$("novo").addEventListener("click", () => { $("msg").textContent = ""; pintarCategorias(); limparEscolha(); pintarNota(); dialogo.showModal(); });
+function abrirReview() { $("msg").textContent = ""; pintarCategorias(); limparEscolha(); pintarNota(); dialogo.showModal(); }
 $("cancelar").addEventListener("click", () => dialogo.close());
 
 $("form").addEventListener("submit", async (e) => {
@@ -302,6 +322,28 @@ $("form").addEventListener("submit", async (e) => {
         $("postar").disabled = false;
     }
 });
+
+// feed e reviews têm o mesmo botão +; foto e música são criadas no feed
+function criar(tipo) {
+    if (tipo === "review") abrirReview();
+    else location.href = "feed.html?novo=" + tipo;
+}
+/* ---------- botão + (criar) ---------- */
+const fab = $("fab"), fabMenu = $("fab-menu");
+function fecharFab() {
+    fabMenu.hidden = true;
+    fab.classList.remove("aberto");
+    fab.setAttribute("aria-expanded", "false");
+}
+fab.addEventListener("click", () => {
+    const abrir = fabMenu.hidden;
+    fabMenu.hidden = !abrir;
+    fab.classList.toggle("aberto", abrir);
+    fab.setAttribute("aria-expanded", abrir);
+});
+document.addEventListener("click", (e) => { if (!fabMenu.hidden && !e.target.closest("#fab, #fab-menu")) fecharFab(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharFab(); });
+fabMenu.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { fecharFab(); criar(b.dataset.tipo); }));
 
 carregar();
 </script>
