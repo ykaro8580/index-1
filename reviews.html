@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reviews</title>
+<link rel="icon" type="image/png" href="assets/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800;1,900&family=Barlow:wght@500;600;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="barra">
+    <a class="marca" href="feed.html">Index</a>
+    <button id="ir-feed">Feed</button>
+    <button id="novo" class="novo">Nova review</button>
+    <button id="sair">Sair</button>
+</header>
+
+<main id="lista"></main>
+<p class="credito">Filmes: dados e pôsteres do TMDB, sem aval ou certificação do TMDB. Músicas e álbuns: Apple.</p>
+
+<dialog id="dialogo">
+    <form id="form">
+        <h2>Nova review</h2>
+        <div class="abas" id="cats"></div>
+        <div id="area-busca">
+            <label class="campo"><span>Buscar título</span><input id="busca" autocomplete="off" maxlength="80"></label>
+            <div id="resultados"></div>
+            <button type="button" class="link" id="manual-btn">Não achei, preencher à mão</button>
+        </div>
+        <div id="area-manual" hidden>
+            <label class="campo"><span>Título</span><input id="m-titulo" maxlength="120"></label>
+            <label class="campo"><span>Ano ou artista</span><input id="m-detalhe" maxlength="120"></label>
+            <button type="button" class="link" id="voltar-busca">Voltar para a busca</button>
+        </div>
+        <div id="escolhido" class="escolhido" hidden></div>
+        <label class="campo"><span>Nota: <b id="nota-rotulo"></b></span><input id="nota" type="range" min="0.5" max="5" step="0.5" value="3"></label>
+        <label class="campo"><span>Sua review (opcional)</span><textarea id="texto" rows="4" maxlength="1500"></textarea></label>
+        <div class="acoes">
+            <button type="button" id="cancelar">Cancelar</button>
+            <button type="submit" class="postar" id="postar">Postar</button>
+        </div>
+        <p class="msg" id="msg" role="alert"></p>
+    </form>
+</dialog>
+
+<script src="config.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const filtroUsuario = params.get("u"), filtroItem = params.get("item");
+const token = (() => { try { return localStorage.getItem("token"); } catch (e) { return null; } })();
+if (!token) location.replace("login.html");
+let meuUsuario = "", categoria = "";
+const NOMES = { filme: "Filme", musica: "Música", album: "Álbum" };
+
+async function chamar(dados) {
+    const r = await fetch(API, { method: "POST", body: JSON.stringify({ token, ...dados }) });
+    const j = await r.json();
+    if (!j.ok && /Sessão expirada/.test(j.erro || "")) sair();
+    return j;
+}
+function sair() {
+    try { localStorage.removeItem("token"); } catch (e) {}
+    location.replace("login.html");
+}
+function el(tag, classe, texto) {
+    const e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto !== undefined) e.textContent = texto;
+    return e;
+}
+const formatarData = (iso) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+const estrelas = (n) => "★".repeat(Math.floor(n)) + (n % 1 ? "½" : "") + " " + String(n).replace(".", ",");
+$("sair").addEventListener("click", sair);
+$("ir-feed").addEventListener("click", () => { location.href = "feed.html"; });
+
+function painelComentarios(p, botao) {
+    const caixa = el("div", "comentarios");
+    caixa.hidden = true;
+    const lista = el("div", "lista-coment");
+    const form = el("form", "form-coment");
+    const campo = el("input");
+    campo.placeholder = "Escreva um comentário";
+    campo.maxLength = 300;
+    campo.setAttribute("aria-label", "Comentário");
+    const enviar = el("button", "curtir", "Enviar");
+    enviar.type = "submit";
+    form.append(campo, enviar);
+    caixa.append(lista, form);
+
+    let total = p.comentarios, carregado = false;
+    const rotulo = () => { botao.textContent = "Comentários (" + total + ")"; };
+    rotulo();
+
+    const linha = (c) => {
+        const l = el("p", "coment");
+        l.append(el("strong", "", "@" + c.usuario), " ", c.texto);
+        if (c.pode) {
+            const x = el("button", "", "Apagar");
+            x.addEventListener("click", async () => {
+                x.disabled = true;
+                const r = await chamar({ acao: "apagarComentario", comentario_id: c.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+                if (!r.ok) { x.disabled = false; alert(r.erro); return; }
+                l.remove(); total--; rotulo();
+            });
+            l.append(x);
+        }
+        return l;
+    };
+
+    botao.addEventListener("click", async () => {
+        caixa.hidden = !caixa.hidden;
+        if (caixa.hidden || carregado) return;
+        lista.replaceChildren(el("p", "vazio-coment", "Carregando…"));
+        const r = await chamar({ acao: "comentarios", post_id: p.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+        if (!r.ok) { lista.replaceChildren(el("p", "vazio-coment", r.erro)); return; }
+        carregado = true;
+        lista.replaceChildren(...(r.comentarios.length ? r.comentarios.map(linha) : [el("p", "vazio-coment", "Ainda sem comentários.")]));
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const texto = campo.value.trim();
+        if (!texto || !carregado) return;
+        enviar.disabled = true;
+        const r = await chamar({ acao: "comentar", post_id: p.id, texto }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+        enviar.disabled = false;
+        if (!r.ok) { alert(r.erro); return; }
+        lista.querySelector(".vazio-coment")?.remove();
+        lista.append(linha(r.comentario));
+        campo.value = ""; total++; rotulo();
+    });
+    return caixa;
+}
+
+
+/* ---------- cartão de review ---------- */
+function cartao(r) {
+    const a = el("article", "post review");
+    const topo = el("header", "topo");
+    const autor = el("a", "autor", "@" + r.usuario);
+    autor.href = "reviews.html?u=" + encodeURIComponent(r.usuario);
+    topo.append(autor, el("time", "data", formatarData(r.criado_em)));
+    const corpo = el("div", "review-corpo");
+    if (r.capa_url) {
+        const i = el("img", "capa");
+        i.src = r.capa_url; i.alt = "Capa de " + r.titulo; i.loading = "lazy";
+        corpo.append(i);
+    }
+    const info = el("div", "review-info");
+    const t = el("a", "titulo", r.titulo);
+    t.href = "reviews.html?item=" + encodeURIComponent(r.item_id);
+    info.append(el("p", "categoria", NOMES[r.categoria] || r.categoria), t);
+    if (r.detalhe) info.append(el("p", "detalhe", r.detalhe));
+    info.append(el("p", "nota", estrelas(r.nota)));
+    corpo.append(info);
+    a.append(topo, corpo);
+    if (r.texto) a.append(el("p", "legenda", r.texto));
+
+    const rodape = el("div", "rodape");
+    const curtir = el("button", "curtir");
+    let curti = r.curti, total = r.curtidas;
+    const pintar = () => { curtir.textContent = "♥ " + total; curtir.setAttribute("aria-pressed", curti); };
+    pintar();
+    curtir.addEventListener("click", async () => {
+        curti = !curti; total += curti ? 1 : -1; pintar();
+        const x = await chamar({ acao: "curtir", post_id: r.id }).catch(() => ({ ok: false }));
+        if (!x.ok) { curti = !curti; total += curti ? 1 : -1; pintar(); }
+    });
+    const botaoComent = el("button", "curtir");
+    rodape.append(curtir, botaoComent);
+    a.append(rodape, painelComentarios(r, botaoComent));
+    if (r.usuario === meuUsuario) {
+        const apagar = el("button", "apagar", "Apagar");
+        apagar.addEventListener("click", async () => {
+            if (!confirm("Apagar esta review? Não dá para desfazer.")) return;
+            apagar.disabled = true;
+            const x = await chamar({ acao: "apagarReview", review_id: r.id }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+            if (!x.ok) { apagar.disabled = false; alert(x.erro); return; }
+            a.remove();
+        });
+        rodape.append(apagar);
+    }
+    return a;
+}
+
+async function carregar() {
+    const lista = $("lista");
+    lista.replaceChildren();
+    if (filtroUsuario || filtroItem) {
+        const v = el("a", "voltar", "← Todas as reviews");
+        v.href = "reviews.html";
+        lista.append(v);
+    }
+    if (filtroUsuario) lista.append(el("h1", "perfil", "@" + filtroUsuario));
+    if (!filtroItem) {
+        const abas = el("div", "abas");
+        [["", "Todas"], ["filme", "Filmes"], ["musica", "Músicas"], ["album", "Álbuns"]].forEach(([id, nome]) => {
+            const b = el("button", "curtir", nome);
+            b.setAttribute("aria-pressed", categoria === id);
+            b.addEventListener("click", () => { if (categoria !== id) { categoria = id; carregar(); } });
+            abas.append(b);
+        });
+        lista.append(abas);
+    }
+    let r;
+    try { r = await chamar({ acao: "reviews", categoria, usuario: filtroUsuario, item_id: filtroItem }); }
+    catch (e) { lista.append(el("p", "vazio", "Sem conexão com o servidor. Recarregue a página.")); return; }
+    if (!r.ok) { lista.append(el("p", "vazio", r.erro)); return; }
+    meuUsuario = r.eu;
+    if (filtroItem && r.reviews.length) {
+        const p = r.reviews[0];
+        document.title = p.titulo;
+        lista.append(el("h1", "perfil", p.titulo));
+        lista.append(el("p", "vazio", (p.detalhe ? p.detalhe + ". " : "") + "Média " + String(r.resumo.media).replace(".", ",") + " de 5, em " + r.resumo.total + (r.resumo.total === 1 ? " review." : " reviews.")));
+    }
+    if (!r.reviews.length) {
+        lista.append(el("p", "vazio", "Ainda não tem nada por aqui. Escreva a primeira review."));
+        return;
+    }
+    r.reviews.forEach((x) => lista.append(cartao(x)));
+}
+
+/* ---------- nova review ---------- */
+const dialogo = $("dialogo");
+let nova = "filme", escolhido = null, buscaId = 0, espera = null;
+
+function pintarCategorias() {
+    $("cats").replaceChildren(...[["filme", "Filme"], ["musica", "Música"], ["album", "Álbum"]].map(([id, nome]) => {
+        const b = el("button", "curtir", nome);
+        b.type = "button";
+        b.setAttribute("aria-pressed", nova === id);
+        b.addEventListener("click", () => { nova = id; limparEscolha(); pintarCategorias(); });
+        return b;
+    }));
+}
+function limparEscolha() {
+    escolhido = null; buscaId++;
+    $("escolhido").hidden = true; $("area-busca").hidden = false; $("area-manual").hidden = true;
+    $("busca").value = ""; $("resultados").replaceChildren();
+}
+function escolher(item) {
+    escolhido = item;
+    const caixa = $("escolhido");
+    caixa.replaceChildren();
+    if (item.capa_url) { const i = el("img", "capa"); i.src = item.capa_url; i.alt = ""; caixa.append(i); }
+    const info = el("div", "review-info");
+    info.append(el("p", "detalhe", item.titulo), el("p", "categoria", item.detalhe));
+    const trocar = el("button", "link", "Trocar");
+    trocar.type = "button";
+    trocar.addEventListener("click", limparEscolha);
+    info.append(trocar);
+    caixa.append(info);
+    caixa.hidden = false; $("area-busca").hidden = true;
+}
+async function buscar() {
+    const termo = $("busca").value.trim(), id = ++buscaId, caixa = $("resultados");
+    if (termo.length < 2) { caixa.replaceChildren(); return; }
+    caixa.replaceChildren(el("p", "vazio-coment", "Buscando…"));
+    const r = await chamar({ acao: "buscarItem", categoria: nova, termo }).catch(() => ({ ok: false, erro: "Sem conexão com o servidor." }));
+    if (id !== buscaId) return;
+    if (!r.ok) { caixa.replaceChildren(el("p", "vazio-coment", r.erro)); return; }
+    if (!r.itens.length) { caixa.replaceChildren(el("p", "vazio-coment", "Nada encontrado. Tente outro nome ou preencha à mão.")); return; }
+    caixa.replaceChildren(...r.itens.map((item) => {
+        const b = el("button", "resultado");
+        b.type = "button";
+        if (item.capa_url) { const i = new Image(); i.src = item.capa_url; i.alt = ""; b.append(i); }
+        const t = el("span", "", item.titulo + (item.detalhe ? " (" + item.detalhe + ")" : ""));
+        b.append(t);
+        b.addEventListener("click", () => escolher(item));
+        return b;
+    }));
+}
+$("busca").addEventListener("input", () => { clearTimeout(espera); espera = setTimeout(buscar, 450); });
+$("manual-btn").addEventListener("click", () => { $("area-busca").hidden = true; $("area-manual").hidden = false; });
+$("voltar-busca").addEventListener("click", () => { $("area-manual").hidden = true; $("area-busca").hidden = false; });
+const pintarNota = () => { $("nota-rotulo").textContent = estrelas(Number($("nota").value)); };
+$("nota").addEventListener("input", pintarNota);
+$("novo").addEventListener("click", () => { $("msg").textContent = ""; pintarCategorias(); limparEscolha(); pintarNota(); dialogo.showModal(); });
+$("cancelar").addEventListener("click", () => dialogo.close());
+
+$("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("msg");
+    const manual = !$("area-manual").hidden;
+    const item = manual ? { item_id: "", titulo: $("m-titulo").value.trim(), detalhe: $("m-detalhe").value.trim(), capa_url: "" } : escolhido;
+    if (!item || !item.titulo) { msg.textContent = "Escolha um título na busca ou preencha à mão."; return; }
+    $("postar").disabled = true;
+    msg.textContent = "Enviando…";
+    try {
+        const r = await chamar({ acao: "postarReview", categoria: nova, ...item, nota: Number($("nota").value), texto: $("texto").value });
+        if (!r.ok) throw new Error(r.erro);
+        $("form").reset();
+        dialogo.close();
+        carregar();
+    } catch (err) {
+        msg.textContent = err.message || "Não foi possível postar. Tente de novo.";
+    } finally {
+        $("postar").disabled = false;
+    }
+});
+
+carregar();
+</script>
+</body>
+</html>
