@@ -1,15 +1,16 @@
 /* Service worker do Index.
    - Arquivos do próprio site: rede primeiro (você publica e já vê a mudança), cache só quando está sem internet.
-   - Fontes do Google e lamejs: guardados na primeira visita online, depois funcionam offline.
+   - Fontes do Google: guardadas na primeira visita online; lamejs local entra no cache na instalação.
    - Tudo o mais passa direto, sem passar por aqui: chamadas ao Apps Script (POST), fotos do Drive, capas do TMDB/Apple.
    Nunca guardamos resposta do servidor de dados, então o feed nunca fica velho. */
-const VERSAO = "index-v1";
+const VERSAO = "index-v2";
 const ESTATICOS = [
     "./", "index.html", "login.html", "feed.html", "reviews.html",
     "style.css", "config.js", "pwa.js", "manifest.json",
+    "vendor/lame.min.js",
     "assets/icone.png", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/apple-touch-icon.png"
 ];
-const CDNS = ["fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"];
+const CDNS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (e) => {
     e.waitUntil(
